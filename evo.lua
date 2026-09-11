@@ -2793,6 +2793,109 @@ MenuPad.Parent =
 	MenuInfo
 
 --========================================================--
+-- CLOSE / UNLOAD EVO
+--========================================================--
+
+Section(
+	OptionRight,
+	"Session"
+)
+
+local CloseEVO =
+	Instance.new("TextButton")
+
+CloseEVO.Size =
+	UDim2.new(
+		1,
+		0,
+		0,
+		34
+	)
+
+CloseEVO.BackgroundColor3 =
+	Color3.fromRGB(
+		22,
+		15,
+		18
+	)
+
+CloseEVO.BorderSizePixel =
+	0
+
+CloseEVO.Text =
+	"CLOSE EVO COMPLETELY"
+
+CloseEVO.TextColor3 =
+	Color3.fromRGB(
+		230,
+		150,
+		165
+	)
+
+CloseEVO.Font =
+	Enum.Font.Code
+
+CloseEVO.TextSize =
+	9
+
+CloseEVO.AutoButtonColor =
+	false
+
+CloseEVO.Parent =
+	OptionRight
+
+local CloseEVOStroke =
+	Instance.new("UIStroke")
+
+CloseEVOStroke.Color =
+	Color3.fromRGB(
+		70,
+		35,
+		42
+	)
+
+CloseEVOStroke.Thickness =
+	1
+
+CloseEVOStroke.Parent =
+	CloseEVO
+
+CloseEVO.MouseEnter:Connect(function()
+
+	CloseEVO.BackgroundColor3 =
+		Color3.fromRGB(
+			35,
+			18,
+			23
+		)
+
+	CloseEVOStroke.Color =
+		Colors.Danger
+
+end)
+
+CloseEVO.MouseLeave:Connect(function()
+
+	CloseEVO.BackgroundColor3 =
+		Color3.fromRGB(
+			22,
+			15,
+			18
+		)
+
+	CloseEVOStroke.Color =
+		Color3.fromRGB(
+			70,
+			35,
+			42
+		)
+
+end)
+
+local EVOClosed =
+	false
+
+--========================================================--
 -- PLAYER LIST
 --========================================================--
 
@@ -6325,6 +6428,123 @@ UIS.InputEnded:Connect(function(Input)
 			false
 
 	end
+
+end)
+
+--========================================================--
+-- FULL UNLOAD
+--========================================================--
+
+local function CloseEVOScript()
+
+	if EVOClosed then
+		return
+	end
+
+	EVOClosed =
+		true
+
+	Config.Aimbot =
+		false
+
+	Config.ESP =
+		false
+
+	Config.Fly =
+		false
+
+	Config.FOVCircle =
+		false
+
+	Config.Crosshair =
+		false
+
+	Config.Snow =
+		false
+
+	AimHeld =
+		false
+
+	CurrentTarget =
+		nil
+
+	-- Stop the EVO render loop first.
+	RunService:UnbindFromRenderStep(
+		"EVO_V7_4_RENDER"
+	)
+
+	-- Stop movement objects.
+	StopFly()
+
+	-- Remove all ESP/highlights created by EVO.
+	for Player in pairs(
+		ESPObjects
+	) do
+
+		RemoveESP(
+			Player
+		)
+
+	end
+
+	-- Restore camera if spectating.
+	ViewingPlayer =
+		nil
+
+	local Character =
+		LocalPlayer.Character
+
+	if Character then
+
+		local Humanoid =
+			Character:FindFirstChildOfClass(
+				"Humanoid"
+			)
+
+		if Humanoid then
+
+			Camera.CameraSubject =
+				Humanoid
+
+		end
+
+	end
+
+	-- Remove the entire EVO GUI. This also removes
+	-- FOV, crosshair, snow and menu UI descendants.
+	if GUI
+		and
+		GUI.Parent then
+
+		GUI:Destroy()
+
+	end
+
+	-- Remove UI sounds created by EVO.
+	if UIClickSound then
+		UIClickSound:Destroy()
+	end
+
+	if UIHoverSound then
+		UIHoverSound:Destroy()
+	end
+
+	print(
+		"EVO V7.4 closed. Run the loader again to reopen."
+	)
+
+end
+
+CloseEVO.MouseButton1Click:Connect(function()
+
+	CloseEVO.Text =
+		"CLOSING EVO..."
+
+	task.wait(
+		0.08
+	)
+
+	CloseEVOScript()
 
 end)
 
