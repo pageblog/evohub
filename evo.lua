@@ -439,9 +439,25 @@ local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+
+--========================================================--
+-- CONFIGURATION SYSTEM (FILES)
+--========================================================--
+
+local FolderName = "EVO_V7_4"
+local ConfigFolder = FolderName .. "/configs"
+
+if not isfolder(FolderName) then
+	makefolder(FolderName)
+end
+
+if not isfolder(ConfigFolder) then
+	makefolder(ConfigFolder)
+end
 
 --========================================================--
 -- CONFIG
@@ -511,8 +527,204 @@ local Config = {
 -- STATE
 --========================================================--
 
+-- Declared here so config loading can refresh the UI later.
+local ThemeRefreshers = {}
+
+local function NormalizeConfigName(Name)
+	Name = tostring(Name or "")
+	Name = Name:gsub("[\\/:*?\"<>|]", "")
+	Name = Name:gsub("^%s+", ""):gsub("%s+$", "")
+	return Name
+end
+
+local function SaveConfig(Name)
+	Name = NormalizeConfigName(Name)
+	if Name == "" then
+		return false
+	end
+
+	local Data = {}
+	for K, V in pairs(Config) do
+		if typeof(V) == "EnumItem" then
+			Data[K] = V.Name
+		else
+			Data[K] = V
+		end
+	end
+
+	local Success = pcall(function()
+		writefile(
+			ConfigFolder .. "/" .. Name .. ".json",
+			HttpService:JSONEncode(Data)
+		)
+	end)
+
+	return Success
+end
+
+local function LoadConfig(Name)
+	Name = NormalizeConfigName(Name)
+	if Name == "" then
+		return false
+	end
+
+	local Success, Content = pcall(
+		readfile,
+		ConfigFolder .. "/" .. Name .. ".json"
+	)
+
+	if not Success then
+		return false
+	end
+
+	local DecodeSuccess, Data = pcall(function()
+		return HttpService:JSONDecode(Content)
+	end)
+
+	if not DecodeSuccess or type(Data) ~= "table" then
+		return false
+	end
+
+	for K, V in pairs(Data) do
+
+		if K == "AimKey" then
+
+			if type(V) == "string" then
+
+				if Enum.KeyCode[V] then
+
+					Config.AimKey =
+						Enum.KeyCode[V]
+
+				elseif Enum.UserInputType[V] then
+
+					Config.AimKey =
+						Enum.UserInputType[V]
+
+				end
+
+			end
+
+		elseif K == "MenuKey" then
+
+			if type(V) == "string"
+				and
+				Enum.KeyCode[V] then
+
+				Config.MenuKey =
+					Enum.KeyCode[V]
+
+			end
+
+		elseif Config[K] ~= nil then
+
+			Config[K] =
+				V
+
+		end
+
+	end
+
+	for _, Refresh in ipairs(ThemeRefreshers) do
+		pcall(Refresh)
+	end
+
+	return true
+end
+
+local function SetAutoLoad(Name)
+	Name = NormalizeConfigName(Name)
+
+	local Success = pcall(function()
+		if Name == "" then
+			if isfile(FolderName .. "/auto_load.txt") then
+				delfile(FolderName .. "/auto_load.txt")
+			end
+		else
+			writefile(FolderName .. "/auto_load.txt", Name)
+		end
+	end)
+
+	return Success
+end
+
+local function GetAutoLoadName()
+	local Success, Name = pcall(
+		readfile,
+		FolderName .. "/auto_load.txt"
+	)
+
+	if Success and type(Name) == "string" then
+		Name = NormalizeConfigName(Name)
+		if Name ~= "" then
+			return Name
+		end
+	end
+
+	return nil
+end
+
+local function GetSavedConfigNames()
+	local Names = {}
+
+	local Success, Files = pcall(function()
+		return listfiles(ConfigFolder)
+	end)
+
+	if not Success or type(Files) ~= "table" then
+		return Names
+	end
+
+	for _, FilePath in ipairs(Files) do
+		local Normalized = tostring(FilePath):gsub("\\", "/")
+		local Name = Normalized:match("([^/]+)%.json$")
+
+		if Name and Name ~= "" then
+			table.insert(Names, Name)
+		end
+	end
+
+	table.sort(Names, function(A, B)
+		return string.lower(A) < string.lower(B)
+	end)
+
+	return Names
+end
+
+local function DeleteConfig(Name)
+	Name = NormalizeConfigName(Name)
+	if Name == "" then
+		return false
+	end
+
+	local Path = ConfigFolder .. "/" .. Name .. ".json"
+
+	local Success = pcall(function()
+		if isfile(Path) then
+			delfile(Path)
+		end
+	end)
+
+	if GetAutoLoadName() == Name then
+		SetAutoLoad("")
+	end
+
+	return Success
+end
+
+local function ApplyAutoLoad()
+	local Name = GetAutoLoadName()
+	if Name then
+		LoadConfig(Name)
+	end
+end
+
+ApplyAutoLoad()
+
 local AimHeld = false
 local WaitingAimBind = false
+local WaitingMenuBind = false
+
 
 local CurrentTarget = nil
 
@@ -534,6 +746,7 @@ local function Accent()
 	)
 
 end
+
 
 local Colors = {
 
@@ -741,6 +954,7 @@ MainStroke.Thickness =
 MainStroke.Parent =
 	Main
 
+
 --========================================================--
 -- TOPBAR
 --========================================================--
@@ -844,6 +1058,150 @@ Build.ZIndex =
 	22
 
 Build.Parent =
+	Topbar
+
+
+--========================================================--
+-- OWNER CREDIT
+--========================================================--
+
+-- Compact owner line at the top of the EVO window.
+-- "Evo" follows the current accent color; @L0C1Y stays gray.
+Build.Position =
+	UDim2.fromOffset(
+		11,
+		25
+	)
+
+Build.Size =
+	UDim2.fromOffset(
+		120,
+		12
+	)
+
+local OwnerPrefix =
+	Instance.new("TextLabel")
+
+OwnerPrefix.Size =
+	UDim2.fromOffset(
+		34,
+		11
+	)
+
+OwnerPrefix.Position =
+	UDim2.fromOffset(
+		11,
+		39
+	)
+
+OwnerPrefix.BackgroundTransparency =
+	1
+
+OwnerPrefix.Text =
+	"Owner:"
+
+OwnerPrefix.TextColor3 =
+	Color3.fromRGB(
+		135,
+		135,
+		145
+	)
+
+OwnerPrefix.Font =
+	Enum.Font.Code
+
+OwnerPrefix.TextSize =
+	7
+
+OwnerPrefix.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+OwnerPrefix.ZIndex =
+	24
+
+OwnerPrefix.Parent =
+	Topbar
+
+local OwnerEVO =
+	Instance.new("TextLabel")
+
+OwnerEVO.Size =
+	UDim2.fromOffset(
+		18,
+		11
+	)
+
+OwnerEVO.Position =
+	UDim2.fromOffset(
+		45,
+		39
+	)
+
+OwnerEVO.BackgroundTransparency =
+	1
+
+OwnerEVO.Text =
+	"Evo"
+
+OwnerEVO.TextColor3 =
+	Accent()
+
+OwnerEVO.Font =
+	Enum.Font.Code
+
+OwnerEVO.TextSize =
+	7
+
+OwnerEVO.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+OwnerEVO.ZIndex =
+	24
+
+OwnerEVO.Parent =
+	Topbar
+
+local OwnerHandle =
+	Instance.new("TextLabel")
+
+OwnerHandle.Size =
+	UDim2.fromOffset(
+		42,
+		11
+	)
+
+OwnerHandle.Position =
+	UDim2.fromOffset(
+		64,
+		39
+	)
+
+OwnerHandle.BackgroundTransparency =
+	1
+
+OwnerHandle.Text =
+	"@L0C1Y"
+
+OwnerHandle.TextColor3 =
+	Color3.fromRGB(
+		135,
+		135,
+		145
+	)
+
+OwnerHandle.Font =
+	Enum.Font.Code
+
+OwnerHandle.TextSize =
+	7
+
+OwnerHandle.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+OwnerHandle.ZIndex =
+	24
+
+OwnerHandle.Parent =
 	Topbar
 
 --========================================================--
@@ -1147,6 +1505,17 @@ local OptionLeft, OptionRight =
 		OptionsPage
 	)
 
+
+local OptionRightLayout =
+	OptionRight:FindFirstChildOfClass(
+		"UIListLayout"
+	)
+
+if OptionRightLayout then
+	OptionRightLayout.SortOrder =
+		Enum.SortOrder.LayoutOrder
+end
+
 --========================================================--
 -- THEME REFRESHERS
 --========================================================--
@@ -1231,6 +1600,8 @@ local function Section(
 
 	Label.Parent =
 		Frame
+
+	return Frame
 
 end
 
@@ -2663,10 +3034,14 @@ Toggle(
 	"Snow"
 )
 
-Section(
-	OptionRight,
-	"Keybinds"
-)
+local KeybindsSection =
+	Section(
+		OptionRight,
+		"Keybinds"
+	)
+
+KeybindsSection.LayoutOrder =
+	10
 
 local AimBind =
 	Instance.new("TextButton")
@@ -2699,6 +3074,9 @@ AimBind.AutoButtonColor =
 
 AimBind.Parent =
 	OptionRight
+
+AimBind.LayoutOrder =
+	11
 
 local function KeyName(Key)
 
@@ -2743,6 +3121,9 @@ end
 
 AimBind.MouseButton1Click:Connect(function()
 
+	WaitingMenuBind =
+		false
+
 	WaitingAimBind =
 		true
 
@@ -2753,61 +3134,1550 @@ end)
 
 RefreshAimBind()
 
-local MenuInfo =
-	Instance.new("TextLabel")
+local MenuBind =
+	Instance.new("TextButton")
 
-MenuInfo.Size =
+MenuBind.Size =
 	UDim2.new(
 		1,
 		0,
 		0,
-		55
+		32
 	)
 
-MenuInfo.BackgroundColor3 =
+MenuBind.BackgroundColor3 =
 	Colors.Panel
 
-MenuInfo.BorderSizePixel =
+MenuBind.BorderSizePixel =
 	0
 
-MenuInfo.Text =
-	"Menu Key\nRightShift"
+MenuBind.TextColor3 =
+	Colors.Text
 
-MenuInfo.TextColor3 =
-	Colors.Sub
-
-MenuInfo.Font =
+MenuBind.Font =
 	Enum.Font.Code
 
-MenuInfo.TextSize =
+MenuBind.TextSize =
 	9
 
-MenuInfo.TextXAlignment =
-	Enum.TextXAlignment.Left
+MenuBind.AutoButtonColor =
+	false
 
-MenuInfo.Parent =
+MenuBind.Parent =
 	OptionRight
 
-local MenuPad =
-	Instance.new("UIPadding")
+MenuBind.LayoutOrder =
+	12
 
-MenuPad.PaddingLeft =
-	UDim.new(
-		0,
-		8
-	)
+local function RefreshMenuBind()
 
-MenuPad.Parent =
-	MenuInfo
+	MenuBind.Text =
+		"Minimize Key     "
+		..
+		KeyName(
+			Config.MenuKey
+		)
+
+end
+
+MenuBind.MouseButton1Click:Connect(function()
+
+	WaitingAimBind =
+		false
+
+	RefreshAimBind()
+
+	WaitingMenuBind =
+		true
+
+	MenuBind.Text =
+		"Minimize Key     [ PRESS KEY ]"
+
+end)
+
+AimBind.MouseButton1Click:Connect(function()
+
+	WaitingMenuBind =
+		false
+
+	RefreshMenuBind()
+
+end)
+
+table.insert(
+	ThemeRefreshers,
+	RefreshAimBind
+)
+
+table.insert(
+	ThemeRefreshers,
+	RefreshMenuBind
+)
+
+RefreshMenuBind()
 
 --========================================================--
 -- CLOSE / UNLOAD EVO
 --========================================================--
 
-Section(
-	OptionRight,
-	"Session"
+
+--========================================================--
+-- CONFIGURATIONS
+--========================================================--
+
+local ConfigurationsSection =
+	Section(
+		OptionRight,
+		"Configurations"
+	)
+
+ConfigurationsSection.LayoutOrder =
+	20
+
+local ConfigCard =
+	Instance.new("Frame")
+
+ConfigCard.Size =
+	UDim2.new(
+		1,
+		0,
+		0,
+		264
+	)
+
+ConfigCard.BackgroundColor3 =
+	Color3.fromRGB(
+		11,
+		11,
+		13
+	)
+
+ConfigCard.BorderSizePixel =
+	0
+
+ConfigCard.Parent =
+	OptionRight
+
+ConfigCard.LayoutOrder =
+	21
+
+local ConfigCardStroke =
+	Instance.new("UIStroke")
+
+ConfigCardStroke.Color =
+	Colors.Stroke
+
+ConfigCardStroke.Thickness =
+	1
+
+ConfigCardStroke.Parent =
+	ConfigCard
+
+local ConfigHeader =
+	Instance.new("TextLabel")
+
+ConfigHeader.Size =
+	UDim2.new(
+		1,
+		-16,
+		0,
+		18
+	)
+
+ConfigHeader.Position =
+	UDim2.fromOffset(
+		8,
+		7
+	)
+
+ConfigHeader.BackgroundTransparency =
+	1
+
+ConfigHeader.Text =
+	"SAVED CONFIGURATION"
+
+ConfigHeader.TextColor3 =
+	Colors.Sub
+
+ConfigHeader.Font =
+	Enum.Font.Code
+
+ConfigHeader.TextSize =
+	8
+
+ConfigHeader.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+ConfigHeader.Parent =
+	ConfigCard
+
+local ConfigSelector =
+	Instance.new("TextButton")
+
+ConfigSelector.Size =
+	UDim2.new(
+		1,
+		-16,
+		0,
+		34
+	)
+
+ConfigSelector.Position =
+	UDim2.fromOffset(
+		8,
+		29
+	)
+
+ConfigSelector.BackgroundColor3 =
+	Colors.Panel2
+
+ConfigSelector.BorderSizePixel =
+	0
+
+ConfigSelector.Text =
+	""
+
+ConfigSelector.AutoButtonColor =
+	false
+
+ConfigSelector.Parent =
+	ConfigCard
+
+local ConfigSelectorStroke =
+	Instance.new("UIStroke")
+
+ConfigSelectorStroke.Color =
+	Colors.Stroke
+
+ConfigSelectorStroke.Thickness =
+	1
+
+ConfigSelectorStroke.Parent =
+	ConfigSelector
+
+local ConfigSelectorText =
+	Instance.new("TextLabel")
+
+ConfigSelectorText.Size =
+	UDim2.new(
+		1,
+		-42,
+		1,
+		0
+	)
+
+ConfigSelectorText.Position =
+	UDim2.fromOffset(
+		10,
+		0
+	)
+
+ConfigSelectorText.BackgroundTransparency =
+	1
+
+ConfigSelectorText.Text =
+	"Select config..."
+
+ConfigSelectorText.TextColor3 =
+	Colors.Text
+
+ConfigSelectorText.Font =
+	Enum.Font.Code
+
+ConfigSelectorText.TextSize =
+	9
+
+ConfigSelectorText.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+ConfigSelectorText.Parent =
+	ConfigSelector
+
+local ConfigSelectorArrow =
+	Instance.new("TextLabel")
+
+ConfigSelectorArrow.Size =
+	UDim2.fromOffset(
+		28,
+		34
+	)
+
+ConfigSelectorArrow.Position =
+	UDim2.new(
+		1,
+		-32,
+		0,
+		0
+	)
+
+ConfigSelectorArrow.BackgroundTransparency =
+	1
+
+ConfigSelectorArrow.Text =
+	"v"
+
+ConfigSelectorArrow.TextColor3 =
+	Accent()
+
+ConfigSelectorArrow.Font =
+	Enum.Font.Code
+
+ConfigSelectorArrow.TextSize =
+	9
+
+ConfigSelectorArrow.Parent =
+	ConfigSelector
+
+local ConfigList =
+	Instance.new("ScrollingFrame")
+
+ConfigList.Size =
+	UDim2.new(
+		1,
+		-16,
+		0,
+		0
+	)
+
+ConfigList.Position =
+	UDim2.fromOffset(
+		8,
+		67
+	)
+
+ConfigList.BackgroundColor3 =
+	Color3.fromRGB(
+		9,
+		9,
+		11
+	)
+
+ConfigList.BorderSizePixel =
+	0
+
+ConfigList.ScrollBarThickness =
+	2
+
+ConfigList.ScrollBarImageColor3 =
+	Accent()
+
+ConfigList.CanvasSize =
+	UDim2.new()
+
+ConfigList.AutomaticCanvasSize =
+	Enum.AutomaticSize.Y
+
+ConfigList.ClipsDescendants =
+	true
+
+ConfigList.Visible =
+	false
+
+ConfigList.ZIndex =
+	80
+
+ConfigList.Parent =
+	ConfigCard
+
+local ConfigListStroke =
+	Instance.new("UIStroke")
+
+ConfigListStroke.Color =
+	Colors.Stroke
+
+ConfigListStroke.Thickness =
+	1
+
+ConfigListStroke.Parent =
+	ConfigList
+
+local ConfigListLayout =
+	Instance.new("UIListLayout")
+
+ConfigListLayout.Padding =
+	UDim.new(
+		0,
+		2
+	)
+
+ConfigListLayout.Parent =
+	ConfigList
+
+local ConfigListPadding =
+	Instance.new("UIPadding")
+
+ConfigListPadding.PaddingTop =
+	UDim.new(
+		0,
+		4
+	)
+
+ConfigListPadding.PaddingBottom =
+	UDim.new(
+		0,
+		4
+	)
+
+ConfigListPadding.PaddingLeft =
+	UDim.new(
+		0,
+		4
+	)
+
+ConfigListPadding.PaddingRight =
+	UDim.new(
+		0,
+		4
+	)
+
+ConfigListPadding.Parent =
+	ConfigList
+
+local ConfigNameLabel =
+	Instance.new("TextLabel")
+
+ConfigNameLabel.Size =
+	UDim2.new(
+		1,
+		-16,
+		0,
+		16
+	)
+
+ConfigNameLabel.Position =
+	UDim2.fromOffset(
+		8,
+		75
+	)
+
+ConfigNameLabel.BackgroundTransparency =
+	1
+
+ConfigNameLabel.Text =
+	"CREATE / OVERWRITE"
+
+ConfigNameLabel.TextColor3 =
+	Colors.Sub
+
+ConfigNameLabel.Font =
+	Enum.Font.Code
+
+ConfigNameLabel.TextSize =
+	8
+
+ConfigNameLabel.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+ConfigNameLabel.Parent =
+	ConfigCard
+
+local ConfigNameBox =
+	Instance.new("TextBox")
+
+ConfigNameBox.Size =
+	UDim2.new(
+		1,
+		-16,
+		0,
+		32
+	)
+
+ConfigNameBox.Position =
+	UDim2.fromOffset(
+		8,
+		95
+	)
+
+ConfigNameBox.BackgroundColor3 =
+	Colors.Panel2
+
+ConfigNameBox.BorderSizePixel =
+	0
+
+ConfigNameBox.Text =
+	""
+
+ConfigNameBox.PlaceholderText =
+	"Config name..."
+
+ConfigNameBox.PlaceholderColor3 =
+	Color3.fromRGB(
+		75,
+		75,
+		85
+	)
+
+ConfigNameBox.TextColor3 =
+	Colors.Text
+
+ConfigNameBox.Font =
+	Enum.Font.Code
+
+ConfigNameBox.TextSize =
+	9
+
+ConfigNameBox.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+ConfigNameBox.ClearTextOnFocus =
+	false
+
+ConfigNameBox.Parent =
+	ConfigCard
+
+local ConfigNamePadding =
+	Instance.new("UIPadding")
+
+ConfigNamePadding.PaddingLeft =
+	UDim.new(
+		0,
+		9
+	)
+
+ConfigNamePadding.PaddingRight =
+	UDim.new(
+		0,
+		9
+	)
+
+ConfigNamePadding.Parent =
+	ConfigNameBox
+
+local ConfigNameStroke =
+	Instance.new("UIStroke")
+
+ConfigNameStroke.Color =
+	Colors.Stroke
+
+ConfigNameStroke.Thickness =
+	1
+
+ConfigNameStroke.Parent =
+	ConfigNameBox
+
+local ConfigActions =
+	Instance.new("Frame")
+
+ConfigActions.Size =
+	UDim2.new(
+		1,
+		-16,
+		0,
+		32
+	)
+
+ConfigActions.Position =
+	UDim2.fromOffset(
+		8,
+		136
+	)
+
+ConfigActions.BackgroundTransparency =
+	1
+
+ConfigActions.Parent =
+	ConfigCard
+
+local function CreateConfigAction(
+	Text,
+	XScale,
+	XOffset,
+	WidthOffset
 )
+
+	local Button =
+		Instance.new("TextButton")
+
+	Button.Size =
+		UDim2.new(
+			0.5,
+			WidthOffset,
+			1,
+			0
+		)
+
+	Button.Position =
+		UDim2.new(
+			XScale,
+			XOffset,
+			0,
+			0
+		)
+
+	Button.BackgroundColor3 =
+		Colors.Panel3
+
+	Button.BorderSizePixel =
+		0
+
+	Button.Text =
+		Text
+
+	Button.TextColor3 =
+		Colors.Text
+
+	Button.Font =
+		Enum.Font.Code
+
+	Button.TextSize =
+		8
+
+	Button.AutoButtonColor =
+		false
+
+	Button.Parent =
+		ConfigActions
+
+	local Stroke =
+		Instance.new("UIStroke")
+
+	Stroke.Color =
+		Colors.Stroke
+
+	Stroke.Thickness =
+		1
+
+	Stroke.Parent =
+		Button
+
+	Button.MouseEnter:Connect(function()
+
+		Button.BackgroundColor3 =
+			Color3.fromRGB(
+				28,
+				24,
+				29
+			)
+
+		Stroke.Color =
+			Accent()
+
+	end)
+
+	Button.MouseLeave:Connect(function()
+
+		Button.BackgroundColor3 =
+			Colors.Panel3
+
+		Stroke.Color =
+			Colors.Stroke
+
+	end)
+
+	HookUIButton(
+		Button
+	)
+
+	return Button
+
+end
+
+local SaveBtn =
+	CreateConfigAction(
+		"SAVE",
+		0,
+		0,
+		-3
+	)
+
+local LoadBtn =
+	CreateConfigAction(
+		"LOAD",
+		0.5,
+		3,
+		-3
+	)
+
+local ConfigSecondaryActions =
+	Instance.new("Frame")
+
+ConfigSecondaryActions.Size =
+	UDim2.new(
+		1,
+		-16,
+		0,
+		32
+	)
+
+ConfigSecondaryActions.Position =
+	UDim2.fromOffset(
+		8,
+		174
+	)
+
+ConfigSecondaryActions.BackgroundTransparency =
+	1
+
+ConfigSecondaryActions.Parent =
+	ConfigCard
+
+local AutoBtn =
+	Instance.new("TextButton")
+
+AutoBtn.Size =
+	UDim2.new(
+		0.65,
+		-3,
+		1,
+		0
+	)
+
+AutoBtn.BackgroundColor3 =
+	Colors.Panel3
+
+AutoBtn.BorderSizePixel =
+	0
+
+AutoBtn.Text =
+	"AUTO LOAD: OFF"
+
+AutoBtn.TextColor3 =
+	Colors.Text
+
+AutoBtn.Font =
+	Enum.Font.Code
+
+AutoBtn.TextSize =
+	8
+
+AutoBtn.AutoButtonColor =
+	false
+
+AutoBtn.Parent =
+	ConfigSecondaryActions
+
+local AutoStroke =
+	Instance.new("UIStroke")
+
+AutoStroke.Color =
+	Colors.Stroke
+
+AutoStroke.Thickness =
+	1
+
+AutoStroke.Parent =
+	AutoBtn
+
+local DeleteBtn =
+	Instance.new("TextButton")
+
+DeleteBtn.Size =
+	UDim2.new(
+		0.35,
+		-3,
+		1,
+		0
+	)
+
+DeleteBtn.Position =
+	UDim2.new(
+		0.65,
+		6,
+		0,
+		0
+	)
+
+DeleteBtn.BackgroundColor3 =
+	Color3.fromRGB(
+		24,
+		15,
+		18
+	)
+
+DeleteBtn.BorderSizePixel =
+	0
+
+DeleteBtn.Text =
+	"DELETE"
+
+DeleteBtn.TextColor3 =
+	Color3.fromRGB(
+		230,
+		150,
+		165
+	)
+
+DeleteBtn.Font =
+	Enum.Font.Code
+
+DeleteBtn.TextSize =
+	8
+
+DeleteBtn.AutoButtonColor =
+	false
+
+DeleteBtn.Parent =
+	ConfigSecondaryActions
+
+local DeleteStroke =
+	Instance.new("UIStroke")
+
+DeleteStroke.Color =
+	Color3.fromRGB(
+		70,
+		35,
+		42
+	)
+
+DeleteStroke.Thickness =
+	1
+
+DeleteStroke.Parent =
+	DeleteBtn
+
+local ConfigStatus =
+	Instance.new("TextLabel")
+
+ConfigStatus.Size =
+	UDim2.new(
+		1,
+		-16,
+		0,
+		38
+	)
+
+ConfigStatus.Position =
+	UDim2.fromOffset(
+		8,
+		216
+	)
+
+ConfigStatus.BackgroundTransparency =
+	1
+
+ConfigStatus.Text =
+	"No config selected"
+
+ConfigStatus.TextColor3 =
+	Colors.Sub
+
+ConfigStatus.Font =
+	Enum.Font.Code
+
+ConfigStatus.TextSize =
+	8
+
+ConfigStatus.TextWrapped =
+	true
+
+ConfigStatus.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+ConfigStatus.TextYAlignment =
+	Enum.TextYAlignment.Top
+
+ConfigStatus.Parent =
+	ConfigCard
+
+local SelectedConfigName = nil
+local ConfigListOpen = false
+
+local function UpdateConfigButtonState()
+
+	ConfigSelectorText.Text =
+		SelectedConfigName
+		or
+		"Select config..."
+
+	local AutoName =
+		GetAutoLoadName()
+
+	if AutoName then
+
+		AutoBtn.Text =
+			"AUTO LOAD: "
+			..
+			string.upper(
+				AutoName
+			)
+
+		if SelectedConfigName ==
+			AutoName then
+
+			AutoStroke.Color =
+				Accent()
+
+		else
+
+			AutoStroke.Color =
+				Colors.Stroke
+
+		end
+
+	else
+
+		AutoBtn.Text =
+			"AUTO LOAD: OFF"
+
+		AutoStroke.Color =
+			Colors.Stroke
+
+	end
+
+end
+
+local function SetConfigStatus(
+	Text,
+	IsError
+)
+
+	ConfigStatus.Text =
+		Text
+
+	if IsError then
+
+		ConfigStatus.TextColor3 =
+			Colors.Danger
+
+	else
+
+		ConfigStatus.TextColor3 =
+			Colors.Sub
+
+	end
+
+end
+
+local function CloseConfigList()
+
+	ConfigListOpen =
+		false
+
+	ConfigList.Visible =
+		false
+
+	ConfigList.Size =
+		UDim2.new(
+			1,
+			-16,
+			0,
+			0
+		)
+
+	ConfigSelectorArrow.Text =
+		"v"
+
+	ConfigNameLabel.Position =
+		UDim2.fromOffset(
+			8,
+			75
+		)
+
+	ConfigNameBox.Position =
+		UDim2.fromOffset(
+			8,
+			95
+		)
+
+	ConfigActions.Position =
+		UDim2.fromOffset(
+			8,
+			136
+		)
+
+	ConfigSecondaryActions.Position =
+		UDim2.fromOffset(
+			8,
+			174
+		)
+
+	ConfigStatus.Position =
+		UDim2.fromOffset(
+			8,
+			216
+		)
+
+	ConfigCard.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			264
+		)
+
+end
+
+local function RebuildConfigList()
+
+	for _, Child in ipairs(
+		ConfigList:GetChildren()
+	) do
+
+		if Child:IsA(
+			"TextButton"
+		) then
+
+			Child:Destroy()
+
+		end
+
+	end
+
+	local Names =
+		GetSavedConfigNames()
+
+	if #Names == 0 then
+
+		local Empty =
+			Instance.new("TextLabel")
+
+		Empty.Size =
+			UDim2.new(
+				1,
+				0,
+				0,
+				30
+			)
+
+		Empty.BackgroundTransparency =
+			1
+
+		Empty.Text =
+			"No saved configs"
+
+		Empty.TextColor3 =
+			Colors.Sub
+
+		Empty.Font =
+			Enum.Font.Code
+
+		Empty.TextSize =
+			8
+
+		Empty.ZIndex =
+			81
+
+		Empty.Parent =
+			ConfigList
+
+		return Names
+
+	end
+
+	for _, Name in ipairs(
+		Names
+	) do
+
+		local Item =
+			Instance.new("TextButton")
+
+		Item.Size =
+			UDim2.new(
+				1,
+				0,
+				0,
+				28
+			)
+
+		Item.BackgroundColor3 =
+			Color3.fromRGB(
+				15,
+				15,
+				18
+			)
+
+		Item.BorderSizePixel =
+			0
+
+		Item.AutoButtonColor =
+			false
+
+		Item.Text =
+			"   "
+			..
+			Name
+
+		Item.TextColor3 =
+			Colors.Text
+
+		Item.Font =
+			Enum.Font.Code
+
+		Item.TextSize =
+			9
+
+		Item.TextXAlignment =
+			Enum.TextXAlignment.Left
+
+		Item.ZIndex =
+			81
+
+		Item.Parent =
+			ConfigList
+
+		local ItemAccent =
+			Instance.new("Frame")
+
+		ItemAccent.Size =
+			UDim2.fromOffset(
+				2,
+				16
+			)
+
+		ItemAccent.Position =
+			UDim2.fromOffset(
+				2,
+				6
+			)
+
+		ItemAccent.BackgroundColor3 =
+			Accent()
+
+		ItemAccent.BackgroundTransparency =
+			(
+				SelectedConfigName ==
+				Name
+			)
+			and
+			0
+			or
+			1
+
+		ItemAccent.BorderSizePixel =
+			0
+
+		ItemAccent.ZIndex =
+			82
+
+		ItemAccent.Parent =
+			Item
+
+		Item.MouseEnter:Connect(function()
+
+			Item.BackgroundColor3 =
+				Color3.fromRGB(
+					25,
+					22,
+					27
+				)
+
+			Item.TextColor3 =
+				Accent()
+
+			ItemAccent.BackgroundTransparency =
+				0
+
+		end)
+
+		Item.MouseLeave:Connect(function()
+
+			Item.BackgroundColor3 =
+				Color3.fromRGB(
+					15,
+					15,
+					18
+				)
+
+			Item.TextColor3 =
+				Colors.Text
+
+			if SelectedConfigName ~=
+				Name then
+
+				ItemAccent.BackgroundTransparency =
+					1
+
+			end
+
+		end)
+
+		Item.MouseButton1Click:Connect(function()
+
+			SelectedConfigName =
+				Name
+
+			ConfigNameBox.Text =
+				Name
+
+			UpdateConfigButtonState()
+			CloseConfigList()
+
+			SetConfigStatus(
+				"Selected: "
+				..
+				Name,
+				false
+			)
+
+		end)
+
+		HookUIButton(
+			Item
+		)
+
+	end
+
+	return Names
+
+end
+
+ConfigSelector.MouseEnter:Connect(function()
+
+	ConfigSelector.BackgroundColor3 =
+		Color3.fromRGB(
+			23,
+			21,
+			24
+		)
+
+	ConfigSelectorStroke.Color =
+		Accent()
+
+end)
+
+ConfigSelector.MouseLeave:Connect(function()
+
+	ConfigSelector.BackgroundColor3 =
+		Colors.Panel2
+
+	ConfigSelectorStroke.Color =
+		Colors.Stroke
+
+end)
+
+ConfigSelector.MouseButton1Click:Connect(function()
+
+	ConfigListOpen =
+		not ConfigListOpen
+
+	if not ConfigListOpen then
+
+		CloseConfigList()
+		return
+
+	end
+
+	local Names =
+		RebuildConfigList()
+
+	local VisibleRows =
+		math.clamp(
+			#Names,
+			1,
+			5
+		)
+
+	local Height =
+		VisibleRows
+		*
+		30
+		+
+		8
+
+	ConfigList.Visible =
+		true
+
+	ConfigList.Size =
+		UDim2.new(
+			1,
+			-16,
+			0,
+			Height
+		)
+
+	ConfigSelectorArrow.Text =
+		"^"
+
+	ConfigNameLabel.Position =
+		UDim2.fromOffset(
+			8,
+			79 + Height
+		)
+
+	ConfigNameBox.Position =
+		UDim2.fromOffset(
+			8,
+			99 + Height
+		)
+
+	ConfigActions.Position =
+		UDim2.fromOffset(
+			8,
+			140 + Height
+		)
+
+	ConfigSecondaryActions.Position =
+		UDim2.fromOffset(
+			8,
+			178 + Height
+		)
+
+	ConfigStatus.Position =
+		UDim2.fromOffset(
+			8,
+			220 + Height
+		)
+
+	ConfigCard.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			268 + Height
+		)
+
+end)
+
+SaveBtn.MouseButton1Click:Connect(function()
+
+	local Name =
+		NormalizeConfigName(
+			ConfigNameBox.Text
+		)
+
+	if Name == "" then
+
+		SetConfigStatus(
+			"Type a name before saving.",
+			true
+		)
+
+		return
+
+	end
+
+	if SaveConfig(
+		Name
+	) then
+
+		SelectedConfigName =
+			Name
+
+		ConfigNameBox.Text =
+			Name
+
+		UpdateConfigButtonState()
+
+		SetConfigStatus(
+			"Saved: "
+			..
+			Name,
+			false
+		)
+
+	else
+
+		SetConfigStatus(
+			"Could not save this config.",
+			true
+		)
+
+	end
+
+end)
+
+LoadBtn.MouseButton1Click:Connect(function()
+
+	local Name =
+		SelectedConfigName
+		or
+		NormalizeConfigName(
+			ConfigNameBox.Text
+		)
+
+	if not Name
+		or
+		Name == "" then
+
+		SetConfigStatus(
+			"Select a config first.",
+			true
+		)
+
+		return
+
+	end
+
+	if LoadConfig(
+		Name
+	) then
+
+		SelectedConfigName =
+			Name
+
+		ConfigNameBox.Text =
+			Name
+
+		UpdateConfigButtonState()
+
+		SetConfigStatus(
+			"Loaded: "
+			..
+			Name,
+			false
+		)
+
+	else
+
+		SetConfigStatus(
+			"Could not load "
+			..
+			Name,
+			true
+		)
+
+	end
+
+end)
+
+AutoBtn.MouseButton1Click:Connect(function()
+
+	local Name =
+		SelectedConfigName
+		or
+		NormalizeConfigName(
+			ConfigNameBox.Text
+		)
+
+	if not Name
+		or
+		Name == "" then
+
+		SetConfigStatus(
+			"Select a config first.",
+			true
+		)
+
+		return
+
+	end
+
+	local CurrentAuto =
+		GetAutoLoadName()
+
+	if CurrentAuto ==
+		Name then
+
+		SetAutoLoad("")
+
+		SetConfigStatus(
+			"Auto load disabled.",
+			false
+		)
+
+	else
+
+		SetAutoLoad(
+			Name
+		)
+
+		SetConfigStatus(
+			"Auto load: "
+			..
+			Name,
+			false
+		)
+
+	end
+
+	UpdateConfigButtonState()
+
+end)
+
+DeleteBtn.MouseButton1Click:Connect(function()
+
+	if not SelectedConfigName then
+
+		SetConfigStatus(
+			"Select a config first.",
+			true
+		)
+
+		return
+
+	end
+
+	local Name =
+		SelectedConfigName
+
+	if DeleteConfig(
+		Name
+	) then
+
+		SelectedConfigName =
+			nil
+
+		ConfigNameBox.Text =
+			""
+
+		UpdateConfigButtonState()
+
+		SetConfigStatus(
+			"Deleted: "
+			..
+			Name,
+			false
+		)
+
+	else
+
+		SetConfigStatus(
+			"Could not delete "
+			..
+			Name,
+			true
+		)
+
+	end
+
+end)
+
+ConfigNameBox.Focused:Connect(function()
+
+	ConfigNameStroke.Color =
+		Accent()
+
+end)
+
+ConfigNameBox.FocusLost:Connect(function()
+
+	ConfigNameStroke.Color =
+		Colors.Stroke
+
+end)
+
+HookUIButton(
+	ConfigSelector
+)
+
+HookUIButton(
+	AutoBtn
+)
+
+HookUIButton(
+	DeleteBtn
+)
+
+local InitialAutoLoad =
+	GetAutoLoadName()
+
+if InitialAutoLoad then
+
+	SelectedConfigName =
+		InitialAutoLoad
+
+	ConfigNameBox.Text =
+		InitialAutoLoad
+
+	SetConfigStatus(
+		"Auto loaded: "
+		..
+		InitialAutoLoad,
+		false
+	)
+
+end
+
+UpdateConfigButtonState()
+
+local SessionSection =
+	Section(
+		OptionRight,
+		"Session"
+	)
+
+SessionSection.LayoutOrder =
+	30
 
 local CloseEVO =
 	Instance.new("TextButton")
@@ -2851,6 +4721,9 @@ CloseEVO.AutoButtonColor =
 
 CloseEVO.Parent =
 	OptionRight
+
+CloseEVO.LayoutOrder =
+	31
 
 local CloseEVOStroke =
 	Instance.new("UIStroke")
@@ -4605,6 +6478,39 @@ end
 
 local ESPObjects = {}
 
+local TracerLayer =
+	Instance.new("Frame")
+
+TracerLayer.Name =
+	"EVO_TracerLayer"
+
+TracerLayer.Size =
+	UDim2.fromScale(
+		1,
+		1
+	)
+
+TracerLayer.Position =
+	UDim2.fromScale(
+		0,
+		0
+	)
+
+TracerLayer.BackgroundTransparency =
+	1
+
+TracerLayer.BorderSizePixel =
+	0
+
+TracerLayer.ClipsDescendants =
+	false
+
+TracerLayer.ZIndex =
+	17
+
+TracerLayer.Parent =
+	GUI
+
 local function CreateESP(Player)
 
 	if Player ==
@@ -4788,7 +6694,7 @@ local function CreateESP(Player)
 
 	Tracer.AnchorPoint =
 		Vector2.new(
-			0,
+			0.5,
 			0.5
 		)
 
@@ -4804,8 +6710,10 @@ local function CreateESP(Player)
 	Tracer.ZIndex =
 		18
 
+	-- Keep the tracer in the exact same coordinate space as the ESP box.
+	-- This guarantees its endpoint can be placed directly on the box border.
 	Tracer.Parent =
-		GUI
+		Holder
 
 	local HeadDot =
 		Instance.new("Frame")
@@ -5451,16 +7359,31 @@ local function UpdateESP()
 
 		if Config.Tracer then
 
+			-- The tracer is parented to Data.Holder, so both the box and the
+			-- tracer endpoint use the exact same local coordinate system.
+			-- This removes the distance-dependent gap completely.
+			local HolderPosition =
+				Data.Holder.AbsolutePosition
+
+			local ScreenSize =
+				Camera.ViewportSize
+
+			-- Bottom-center of the screen converted to Holder-local coordinates.
 			local Start =
 				Vector2.new(
-					Camera.ViewportSize.X / 2,
-					Camera.ViewportSize.Y
+					ScreenSize.X * 0.5
+						-
+						HolderPosition.X,
+					ScreenSize.Y - 2
+						-
+						HolderPosition.Y
 				)
 
+			-- Exact center of the rendered lower box border.
 			local Finish =
 				Vector2.new(
-					RootScreen.X,
-					RootScreen.Y
+					Width * 0.5,
+					Height - 1
 				)
 
 			local Difference =
@@ -5468,31 +7391,52 @@ local function UpdateESP()
 				-
 				Start
 
-			Data.Tracer.Position =
-				UDim2.fromOffset(
-					Start.X,
-					Start.Y
-				)
+			local Length =
+				Difference.Magnitude
 
-			Data.Tracer.Size =
-				UDim2.fromOffset(
-					Difference.Magnitude,
-					1
-				)
+			if Length > 0.5 then
 
-			Data.Tracer.Rotation =
-				math.deg(
-					math.atan2(
-						Difference.Y,
-						Difference.X
+				local Midpoint =
+					(
+						Start
+						+
+						Finish
 					)
-				)
+					/
+					2
 
-			Data.Tracer.BackgroundColor3 =
-				Accent()
+				Data.Tracer.Position =
+					UDim2.fromOffset(
+						Midpoint.X,
+						Midpoint.Y
+					)
 
-			Data.Tracer.Visible =
-				true
+				Data.Tracer.Size =
+					UDim2.fromOffset(
+						Length,
+						1
+					)
+
+				Data.Tracer.Rotation =
+					math.deg(
+						math.atan2(
+							Difference.Y,
+							Difference.X
+						)
+					)
+
+				Data.Tracer.BackgroundColor3 =
+					Accent()
+
+				Data.Tracer.Visible =
+					true
+
+			else
+
+				Data.Tracer.Visible =
+					false
+
+			end
 
 		else
 
@@ -6451,6 +8395,37 @@ UIS.InputBegan:Connect(function(
 	Processed
 )
 
+	if WaitingMenuBind then
+
+		if Input.KeyCode ==
+			Enum.KeyCode.Escape then
+
+			WaitingMenuBind =
+				false
+
+			RefreshMenuBind()
+
+			return
+
+		end
+
+		if Input.UserInputType ==
+			Enum.UserInputType.Keyboard then
+
+			Config.MenuKey =
+				Input.KeyCode
+
+			WaitingMenuBind =
+				false
+
+			RefreshMenuBind()
+
+			return
+
+		end
+
+	end
+
 	if WaitingAimBind then
 
 		if Input.KeyCode ==
@@ -6692,18 +8667,11 @@ local function CloseEVOScript()
 
 end
 
-CloseEVO.MouseButton1Click:Connect(function()
-
-	CloseEVO.Text =
-		"CLOSING EVO..."
-
-	task.wait(
-		0.08
-	)
-
-	CloseEVOScript()
-
-end)
+	CloseEVO.MouseButton1Click:Connect(function()
+		CloseEVO.Text = "CLOSING EVO..."
+		task.wait(0.08)
+		CloseEVOScript()
+	end)
 
 --========================================================--
 -- MAIN LOOP
@@ -6753,6 +8721,13 @@ RunService:BindToRenderStep(
 
 		AccentLine.BackgroundColor3 =
 			Accent()
+
+		if OwnerEVO then
+
+			OwnerEVO.TextColor3 =
+				Accent()
+
+		end
 
 		for _, Refresh in ipairs(
 			ThemeRefreshers
