@@ -1,7 +1,3 @@
---========================================================--
---                  EVO PRIVATE ACCESS
---========================================================--
-
 do
 	local Players = game:GetService("Players")
 	local TweenService = game:GetService("TweenService")
@@ -10,12 +6,6 @@ do
 	local LocalPlayer = Players.LocalPlayer
 	local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-	--====================================================--
-	-- PASSWORD
-	--====================================================--
-
-	-- DJB2 hash da senha.
-	-- A senha em texto puro nao fica armazenada aqui.
 	local PASSWORD_HASH = 726903388
 
 	local function HashPassword(Text)
@@ -31,10 +21,6 @@ do
 		return Hash
 	end
 
-	--====================================================--
-	-- COLORS
-	--====================================================--
-
 	local Accent = Color3.fromRGB(255, 175, 220)
 	local AccentHover = Color3.fromRGB(255, 197, 231)
 	local Panel = Color3.fromRGB(9, 9, 11)
@@ -42,10 +28,6 @@ do
 	local Muted = Color3.fromRGB(105, 105, 115)
 	local Success = Color3.fromRGB(95, 255, 145)
 	local ErrorColor = Color3.fromRGB(255, 85, 105)
-
-	--====================================================--
-	-- SOUNDS
-	--====================================================--
 
 	local function NewSound(Name, SoundId, Volume, PlaybackSpeed)
 		local Sound = Instance.new("Sound")
@@ -57,7 +39,6 @@ do
 		return Sound
 	end
 
-	-- Volumes propositalmente baixos.
 	local HoverSound = NewSound(
 		"EVO_LoginHover",
 		"rbxassetid://6895079853",
@@ -97,25 +78,13 @@ do
 		end)
 	end
 
-	--====================================================--
-	-- REMOVE OLD LOGIN
-	--====================================================--
-
 	local OldGUI = PlayerGui:FindFirstChild("EVO_PRIVATE_ACCESS")
 
 	if OldGUI then
 		OldGUI:Destroy()
 	end
 
-	--====================================================--
-	-- ACCESS EVENT
-	--====================================================--
-
 	local AccessGranted = Instance.new("BindableEvent")
-
-	--====================================================--
-	-- GUI
-	--====================================================--
 
 	local GUI = Instance.new("ScreenGui")
 	GUI.Name = "EVO_PRIVATE_ACCESS"
@@ -240,10 +209,6 @@ do
 	Login.AutoButtonColor = false
 	Login.Parent = Main
 
-	--====================================================--
-	-- MICRO INTERACTIONS
-	--====================================================--
-
 	PasswordBox.Focused:Connect(function()
 		PlaySound(HoverSound)
 
@@ -296,10 +261,6 @@ do
 		):Play()
 	end)
 
-	--====================================================--
-	-- SHAKE / STATUS
-	--====================================================--
-
 	local Shaking = false
 
 	local function Shake()
@@ -338,10 +299,6 @@ do
 			end
 		end)
 	end
-
-	--====================================================--
-	-- AUTHENTICATE
-	--====================================================--
 
 	local Authenticated = false
 
@@ -397,7 +354,6 @@ do
 		end
 	end)
 
-	-- O restante do EVO nao executa antes da autenticacao.
 	AccessGranted.Event:Wait()
 
 	TweenService:Create(
@@ -429,12 +385,6 @@ do
 	end
 end
 
-
---========================================================--
---                       EVO HUB V7.4
---                Roblox Studio Testing UI
---========================================================--
-
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -443,10 +393,6 @@ local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-
---========================================================--
--- CONFIGURATION SYSTEM (FILES)
---========================================================--
 
 local FolderName = "EVO_V7_4"
 local ConfigFolder = FolderName .. "/configs"
@@ -459,13 +405,8 @@ if not isfolder(ConfigFolder) then
 	makefolder(ConfigFolder)
 end
 
---========================================================--
--- CONFIG
---========================================================--
-
 local Config = {
 
-	-- AIM
 	Aimbot = false,
 	AimTeamCheck = true,
 	AimToggle = false,
@@ -483,7 +424,6 @@ local Config = {
 
 	FOVCircle = true,
 
-	-- ESP
 	ESP = false,
 	BoxESP = true,
 	FillBox = false,
@@ -498,7 +438,6 @@ local Config = {
 	Chams = false,
 	HeadDot = false,
 
-	-- CROSSHAIR
 	Crosshair = true,
 	CrosshairStyle = "Cross",
 
@@ -509,11 +448,9 @@ local Config = {
 	CrosshairAnimationType = "Spin",
 	CrosshairAnimationSpeed = 90,
 
-	-- MOVEMENT
 	Fly = false,
 	FlySpeed = 65,
 
-	-- UI
 	Snow = true,
 
 	AccentR = 255,
@@ -523,11 +460,6 @@ local Config = {
 	MenuKey = Enum.KeyCode.RightShift
 }
 
---========================================================--
--- STATE
---========================================================--
-
--- Declared here so config loading can refresh the UI later.
 local ThemeRefreshers = {}
 
 local function NormalizeConfigName(Name)
@@ -725,17 +657,12 @@ local AimHeld = false
 local WaitingAimBind = false
 local WaitingMenuBind = false
 
-
 local CurrentTarget = nil
 
 local SelectedPlayer = nil
 local ViewingPlayer = nil
 
 local CrosshairAnimationTime = 0
-
---========================================================--
--- COLORS
---========================================================--
 
 local function Accent()
 
@@ -746,7 +673,6 @@ local function Accent()
 	)
 
 end
-
 
 local Colors = {
 
@@ -768,10 +694,6 @@ local Colors = {
 	Danger = Color3.fromRGB(220,75,90)
 }
 
---========================================================--
--- GUI
---========================================================--
-
 local GUI = Instance.new("ScreenGui")
 
 GUI.Name = "EVO_V7_4"
@@ -787,11 +709,6 @@ GUI.Parent =
 	LocalPlayer:WaitForChild(
 		"PlayerGui"
 	)
-
-
---========================================================--
--- UI SOUNDS
---========================================================--
 
 local SoundService =
 	game:GetService("SoundService")
@@ -912,10 +829,6 @@ GUI.DescendantAdded:Connect(function(
 
 end)
 
---========================================================--
--- MAIN
---========================================================--
-
 local Main =
 	Instance.new("Frame")
 
@@ -953,11 +866,6 @@ MainStroke.Thickness =
 
 MainStroke.Parent =
 	Main
-
-
---========================================================--
--- TOPBAR
---========================================================--
 
 local Topbar =
 	Instance.new("Frame")
@@ -1060,13 +968,6 @@ Build.ZIndex =
 Build.Parent =
 	Topbar
 
-
---========================================================--
--- OWNER CREDIT
---========================================================--
-
--- Compact owner line at the top of the EVO window.
--- "Evo" follows the current accent color; @L0C1Y stays gray.
 Build.Position =
 	UDim2.fromOffset(
 		11,
@@ -1203,10 +1104,6 @@ OwnerHandle.ZIndex =
 
 OwnerHandle.Parent =
 	Topbar
-
---========================================================--
--- TABS
---========================================================--
 
 local TabHolder =
 	Instance.new("Frame")
@@ -1392,10 +1289,6 @@ CreateTab("Options")
 
 SelectTab("Aiming")
 
---========================================================--
--- COLUMNS
---========================================================--
-
 local function CreateColumns(Page)
 
 	local Left =
@@ -1505,7 +1398,6 @@ local OptionLeft, OptionRight =
 		OptionsPage
 	)
 
-
 local OptionRightLayout =
 	OptionRight:FindFirstChildOfClass(
 		"UIListLayout"
@@ -1516,15 +1408,7 @@ if OptionRightLayout then
 		Enum.SortOrder.LayoutOrder
 end
 
---========================================================--
--- THEME REFRESHERS
---========================================================--
-
 local ThemeRefreshers = {}
-
---========================================================--
--- SECTION
---========================================================--
 
 local function Section(
 	Parent,
@@ -1604,10 +1488,6 @@ local function Section(
 	return Frame
 
 end
-
---========================================================--
--- TOGGLE
---========================================================--
 
 local function Toggle(
 	Parent,
@@ -1739,10 +1619,6 @@ local function Toggle(
 	Refresh()
 
 end
-
---========================================================--
--- SLIDER
---========================================================--
 
 local function Slider(
 	Parent,
@@ -2125,10 +2001,6 @@ local function Slider(
 	Refresh()
 
 end
-
---========================================================--
--- DROPDOWN
---========================================================--
 
 local OpenDropdown = nil
 
@@ -2571,10 +2443,6 @@ local function Dropdown(
 
 end
 
---========================================================--
--- AIMING UI
---========================================================--
-
 Section(
 	AimLeft,
 	"Aimbot"
@@ -2733,10 +2601,6 @@ Dropdown(
 
 	end
 )
-
---========================================================--
--- VISUALS
---========================================================--
 
 Section(
 	VisualLeft,
@@ -2916,10 +2780,6 @@ Slider(
 	0
 )
 
---========================================================--
--- CHARACTER
---========================================================--
-
 Section(
 	CharLeft,
 	"Movement"
@@ -2986,10 +2846,6 @@ FlyHelpPad.PaddingLeft =
 
 FlyHelpPad.Parent =
 	FlyHelp
-
---========================================================--
--- OPTIONS
---========================================================--
 
 Section(
 	OptionLeft,
@@ -3215,15 +3071,6 @@ table.insert(
 )
 
 RefreshMenuBind()
-
---========================================================--
--- CLOSE / UNLOAD EVO
---========================================================--
-
-
---========================================================--
--- CONFIGURATIONS
---========================================================--
 
 local ConfigurationsSection =
 	Section(
@@ -4776,10 +4623,6 @@ end)
 local EVOClosed =
 	false
 
---========================================================--
--- PLAYER LIST
---========================================================--
-
 Section(
 	PlayerLeft,
 	"Player List"
@@ -4833,10 +4676,6 @@ PlayerListLayout.Padding =
 PlayerListLayout.Parent =
 	PlayerList
 
---========================================================--
--- PLAYER PANEL
---========================================================--
-
 Section(
 	PlayerRight,
 	"Selected Player"
@@ -4873,10 +4712,6 @@ PlayerCardStroke.Thickness =
 
 PlayerCardStroke.Parent =
 	PlayerCard
-
---========================================================--
--- PLAYER CARD TOP
---========================================================--
 
 local PlayerHeader =
 	Instance.new("Frame")
@@ -5038,10 +4873,6 @@ StatusCorner.CornerRadius =
 StatusCorner.Parent =
 	StatusDot
 
---========================================================--
--- VIEWPORT CONTAINER
---========================================================--
-
 local ViewportContainer =
 	Instance.new("Frame")
 
@@ -5150,10 +4981,6 @@ PreviewCamera.Parent =
 Viewport.CurrentCamera =
 	PreviewCamera
 
---========================================================--
--- PLAYER PREVIEW CORNERS
---========================================================--
-
 local function MakePreviewLine(
 	Size,
 	Position
@@ -5228,10 +5055,6 @@ MakePreviewLine(
 	UDim2.new(1,-15,1,-46)
 )
 
---========================================================--
--- PREVIEW HP BAR
---========================================================--
-
 local PreviewHPBack =
 	Instance.new("Frame")
 
@@ -5291,10 +5114,6 @@ PreviewHP.BorderSizePixel =
 
 PreviewHP.Parent =
 	PreviewHPBack
-
---========================================================--
--- PLAYER INFO
---========================================================--
 
 local PlayerInfo =
 	Instance.new("Frame")
@@ -5396,10 +5215,6 @@ PreviewHPText.TextSize =
 
 PreviewHPText.Parent =
 	PlayerInfo
-
---========================================================--
--- PLAYER ACTION BUTTONS
---========================================================--
 
 local ActionHolder =
 	Instance.new("Frame")
@@ -5744,10 +5559,6 @@ StopSpectating.MouseButton1Click:Connect(function()
 
 end)
 
---========================================================--
--- PREVIEW MODEL
---========================================================--
-
 local CurrentPreviewModel =
 	nil
 
@@ -5865,7 +5676,6 @@ local function SetPreviewPlayer(Player)
 			5
 		)
 
-	-- FRONT VIEW
 	PreviewCamera.CFrame =
 		CFrame.lookAt(
 
@@ -5884,10 +5694,6 @@ local function SetPreviewPlayer(Player)
 		)
 
 end
-
---========================================================--
--- PLAYER LIST REFRESH
---========================================================--
 
 local function SelectPlayer(Player)
 
@@ -6062,10 +5868,6 @@ end)
 
 RefreshPlayerList()
 
---========================================================--
--- FOV CIRCLE
---========================================================--
-
 local FOVCircle =
 	Instance.new("Frame")
 
@@ -6110,10 +5912,6 @@ FOVStroke.Transparency =
 
 FOVStroke.Parent =
 	FOVCircle
-
---========================================================--
--- CROSSHAIR
---========================================================--
 
 local Cross =
 	Instance.new("Frame")
@@ -6408,7 +6206,6 @@ local function UpdateCrosshair(Delta)
 
 		end
 
-		-- RIGHT
 		CrossLines[1].Size =
 			UDim2.fromOffset(
 				Size,
@@ -6423,7 +6220,6 @@ local function UpdateCrosshair(Delta)
 				0
 			)
 
-		-- LEFT
 		CrossLines[2].Size =
 			UDim2.fromOffset(
 				Size,
@@ -6438,7 +6234,6 @@ local function UpdateCrosshair(Delta)
 				0
 			)
 
-		-- DOWN
 		CrossLines[3].Size =
 			UDim2.fromOffset(
 				1,
@@ -6453,7 +6248,6 @@ local function UpdateCrosshair(Delta)
 				Gap
 			)
 
-		-- UP
 		CrossLines[4].Size =
 			UDim2.fromOffset(
 				1,
@@ -6471,10 +6265,6 @@ local function UpdateCrosshair(Delta)
 	end
 
 end
-
---========================================================--
--- ESP
---========================================================--
 
 local ESPObjects = {}
 
@@ -6710,8 +6500,6 @@ local function CreateESP(Player)
 	Tracer.ZIndex =
 		18
 
-	-- Keep the tracer in the exact same coordinate space as the ESP box.
-	-- This guarantees its endpoint can be placed directly on the box border.
 	Tracer.Parent =
 		Holder
 
@@ -6861,10 +6649,6 @@ Players.PlayerRemoving:Connect(
 	RemoveESP
 )
 
---========================================================--
--- ESP CORNER BOX
---========================================================--
-
 local function UpdateCornerBox(
 	Lines,
 	Width,
@@ -7005,10 +6789,6 @@ local function UpdateCornerBox(
 		)
 
 end
-
---========================================================--
--- ESP UPDATE
---========================================================--
 
 local function UpdateESP()
 
@@ -7359,16 +7139,12 @@ local function UpdateESP()
 
 		if Config.Tracer then
 
-			-- The tracer is parented to Data.Holder, so both the box and the
-			-- tracer endpoint use the exact same local coordinate system.
-			-- This removes the distance-dependent gap completely.
 			local HolderPosition =
 				Data.Holder.AbsolutePosition
 
 			local ScreenSize =
 				Camera.ViewportSize
 
-			-- Bottom-center of the screen converted to Holder-local coordinates.
 			local Start =
 				Vector2.new(
 					ScreenSize.X * 0.5
@@ -7379,7 +7155,6 @@ local function UpdateESP()
 						HolderPosition.Y
 				)
 
-			-- Exact center of the rendered lower box border.
 			local Finish =
 				Vector2.new(
 					Width * 0.5,
@@ -7461,10 +7236,6 @@ local function UpdateESP()
 
 end
 
---========================================================--
--- WALL CHECK
---========================================================--
-
 local function CanSee(Part)
 
 	if not Config.WallCheck then
@@ -7508,10 +7279,6 @@ local function CanSee(Part)
 		)
 
 end
-
---========================================================--
--- TARGET
---========================================================--
 
 local function GetTarget()
 
@@ -7635,11 +7402,6 @@ local function GetTarget()
 
 end
 
-
---========================================================--
--- AIM TARGET VALIDATION
---========================================================--
-
 local function IsAimTargetValid(Part)
 
 	if not Part
@@ -7737,10 +7499,6 @@ local function IsAimTargetValid(Part)
 	return true
 
 end
-
---========================================================--
--- FLY
---========================================================--
 
 local FlyVelocity =
 	nil
@@ -7923,10 +7681,6 @@ local function UpdateFly()
 		)
 
 end
-
---========================================================--
--- SNOW
---========================================================--
 
 local SnowLayer =
 	Instance.new("Frame")
@@ -8193,10 +7947,6 @@ local function UpdateSnow()
 
 end
 
---========================================================--
--- SELECTED PLAYER UPDATE
---========================================================--
-
 local function UpdateSelectedPlayer()
 
 	if not SelectedPlayer
@@ -8296,10 +8046,6 @@ local function UpdateSelectedPlayer()
 
 end
 
---========================================================--
--- WINDOW DRAG
---========================================================--
-
 local DraggingWindow =
 	false
 
@@ -8368,10 +8114,6 @@ UIS.InputEnded:Connect(function(Input)
 	end
 
 end)
-
---========================================================--
--- INPUT
---========================================================--
 
 local function MatchesAimKey(
 	Input
@@ -8563,10 +8305,6 @@ UIS.InputEnded:Connect(function(Input)
 
 end)
 
---========================================================--
--- FULL UNLOAD
---========================================================--
-
 local function CloseEVOScript()
 
 	if EVOClosed then
@@ -8600,15 +8338,12 @@ local function CloseEVOScript()
 	CurrentTarget =
 		nil
 
-	-- Stop the EVO render loop first.
 	RunService:UnbindFromRenderStep(
 		"EVO_V7_4_RENDER"
 	)
 
-	-- Stop movement objects.
 	StopFly()
 
-	-- Remove all ESP/highlights created by EVO.
 	for Player in pairs(
 		ESPObjects
 	) do
@@ -8619,7 +8354,6 @@ local function CloseEVOScript()
 
 	end
 
-	-- Restore camera if spectating.
 	ViewingPlayer =
 		nil
 
@@ -8642,8 +8376,6 @@ local function CloseEVOScript()
 
 	end
 
-	-- Remove the entire EVO GUI. This also removes
-	-- FOV, crosshair, snow and menu UI descendants.
 	if GUI
 		and
 		GUI.Parent then
@@ -8652,7 +8384,6 @@ local function CloseEVOScript()
 
 	end
 
-	-- Remove UI sounds created by EVO.
 	if UIClickSound then
 		UIClickSound:Destroy()
 	end
@@ -8673,10 +8404,6 @@ end
 		CloseEVOScript()
 	end)
 
---========================================================--
--- MAIN LOOP
---========================================================--
-
 RunService:BindToRenderStep(
 
 	"EVO_V7_4_RENDER",
@@ -8689,10 +8416,6 @@ RunService:BindToRenderStep(
 
 		local Mouse =
 			UIS:GetMouseLocation()
-
-		--================================================--
-		-- FOV
-		--================================================--
 
 		FOVCircle.Position =
 			UDim2.fromOffset(
@@ -8711,10 +8434,6 @@ RunService:BindToRenderStep(
 
 		FOVStroke.Color =
 			Accent()
-
-		--================================================--
-		-- THEME
-		--================================================--
 
 		Logo.TextColor3 =
 			Accent()
@@ -8750,10 +8469,6 @@ RunService:BindToRenderStep(
 
 		end
 
-		--================================================--
-		-- SYSTEMS
-		--================================================--
-
 		UpdateCrosshair(
 			Delta
 		)
@@ -8765,10 +8480,6 @@ RunService:BindToRenderStep(
 		UpdateSnow()
 
 		UpdateSelectedPlayer()
-
-		--================================================--
-		-- AIMBOT
-		--================================================--
 
 		if Config.Aimbot
 			and
@@ -8785,9 +8496,6 @@ RunService:BindToRenderStep(
 				CurrentTarget
 			) then
 
-				-- If the locked player dies, changes team,
-				-- becomes invalid or can no longer be targeted,
-				-- release the lock immediately.
 				CurrentTarget =
 					nil
 
