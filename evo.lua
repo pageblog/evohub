@@ -451,6 +451,8 @@ local Config = {
 
 	-- AIM
 	Aimbot = false,
+	AimTeamCheck = true,
+	AimToggle = false,
 	TeamCheck = true,
 	WallCheck = true,
 	Prediction = true,
@@ -2216,7 +2218,13 @@ Toggle(
 Toggle(
 	AimLeft,
 	"Team Check",
-	"TeamCheck"
+	"AimTeamCheck"
+)
+
+Toggle(
+	AimLeft,
+	"Toggle Aim",
+	"AimToggle"
 )
 
 Toggle(
@@ -5583,7 +5591,7 @@ local function GetTarget()
 
 		end
 
-		if Config.TeamCheck
+		if Config.AimTeamCheck
 			and
 			LocalPlayer.Team
 			and
@@ -5680,6 +5688,109 @@ local function GetTarget()
 	end
 
 	return Best
+
+end
+
+
+--========================================================--
+-- AIM TARGET VALIDATION
+--========================================================--
+
+local function IsAimTargetValid(Part)
+
+	if not Part
+		or
+		not Part.Parent then
+
+		return false
+
+	end
+
+	local Character =
+		Part.Parent
+
+	local Humanoid =
+		Character:
+		FindFirstChildOfClass(
+			"Humanoid"
+		)
+
+	if not Humanoid
+		or
+		Humanoid.Health <= 0 then
+
+		return false
+
+	end
+
+	local Player =
+		Players:
+		GetPlayerFromCharacter(
+			Character
+		)
+
+	if not Player
+		or
+		Player == LocalPlayer then
+
+		return false
+
+	end
+
+	if Config.AimTeamCheck
+		and
+		LocalPlayer.Team
+		and
+		Player.Team ==
+		LocalPlayer.Team then
+
+		return false
+
+	end
+
+	local AimPart =
+		Character:
+		FindFirstChild(
+			Config.AimPart
+		)
+
+	if not AimPart then
+		return false
+	end
+
+	if AimPart ~= Part then
+
+		CurrentTarget =
+			AimPart
+
+		Part =
+			AimPart
+
+	end
+
+	local Distance =
+		(
+			Part.Position
+			-
+			Camera.CFrame.Position
+		).Magnitude
+
+	if Distance >
+		Config.MaxDistance then
+
+		return false
+
+	end
+
+	if not CanSee(
+		Part
+	) then
+
+		return false
+
+	end
+
+	return true
 
 end
 
@@ -6411,8 +6522,49 @@ UIS.InputBegan:Connect(function(
 		Input
 	) then
 
-		AimHeld =
-			true
+		if Config.AimToggle then
+
+			if AimHeld then
+
+				AimHeld =
+					false
+
+				CurrentTarget =
+					nil
+
+			else
+
+				AimHeld =
+					true
+
+				CurrentTarget =
+					GetTarget()
+
+				if not CurrentTarget then
+
+					AimHeld =
+						false
+
+				end
+
+			end
+
+		else
+
+			AimHeld =
+				true
+
+			CurrentTarget =
+				GetTarget()
+
+			if not CurrentTarget then
+
+				AimHeld =
+					false
+
+			end
+
+		end
 
 	end
 
@@ -6422,10 +6574,15 @@ UIS.InputEnded:Connect(function(Input)
 
 	if MatchesAimKey(
 		Input
-	) then
+	)
+		and
+		not Config.AimToggle then
 
 		AimHeld =
 			false
+
+		CurrentTarget =
+			nil
 
 	end
 
@@ -6644,8 +6801,29 @@ RunService:BindToRenderStep(
 			and
 			not ViewingPlayer then
 
-			CurrentTarget =
-				GetTarget()
+			if not CurrentTarget then
+
+				CurrentTarget =
+					GetTarget()
+
+			elseif not IsAimTargetValid(
+				CurrentTarget
+			) then
+
+				-- If the locked player dies, changes team,
+				-- becomes invalid or can no longer be targeted,
+				-- release the lock immediately.
+				CurrentTarget =
+					nil
+
+				if Config.AimToggle then
+
+					AimHeld =
+						false
+
+				end
+
+			end
 
 		else
 
@@ -6654,7 +6832,11 @@ RunService:BindToRenderStep(
 
 		end
 
-		if CurrentTarget then
+		if CurrentTarget
+			and
+			IsAimTargetValid(
+				CurrentTarget
+			) then
 
 			local TargetPosition =
 				CurrentTarget.Position
