@@ -1,6 +1,8 @@
 do
 	local Players = game:GetService("Players")
 	local TweenService = game:GetService("TweenService")
+
+
 	local SoundService = game:GetService("SoundService")
 
 	local LocalPlayer = Players.LocalPlayer
@@ -78,7 +80,7 @@ do
 		end)
 	end
 
-	local OldGUI = PlayerGui:FindFirstChild("EVO_PRIVATE_ACCESS")
+	local OldGUI = PlayerGui:FindFirstChild("PULSAR_PRIVATE_ACCESS")
 
 	if OldGUI then
 		OldGUI:Destroy()
@@ -87,7 +89,7 @@ do
 	local AccessGranted = Instance.new("BindableEvent")
 
 	local GUI = Instance.new("ScreenGui")
-	GUI.Name = "EVO_PRIVATE_ACCESS"
+	GUI.Name = "PULSAR_PRIVATE_ACCESS"
 	GUI.ResetOnSpawn = false
 	GUI.IgnoreGuiInset = true
 	GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -124,7 +126,7 @@ do
 	Logo.Size = UDim2.new(1, -28, 0, 30)
 	Logo.Position = UDim2.fromOffset(14, 17)
 	Logo.BackgroundTransparency = 1
-	Logo.Text = "EVO"
+	Logo.Text = "PULSAR"
 	Logo.TextColor3 = Accent
 	Logo.Font = Enum.Font.Code
 	Logo.TextSize = 18
@@ -135,7 +137,7 @@ do
 	Build.Size = UDim2.new(1, -28, 0, 18)
 	Build.Position = UDim2.fromOffset(14, 43)
 	Build.BackgroundTransparency = 1
-	Build.Text = "<3 evo  |  private access"
+	Build.Text = "<3 pulsar  |  private access"
 	Build.TextColor3 = Muted
 	Build.Font = Enum.Font.Code
 	Build.TextSize = 8
@@ -329,8 +331,8 @@ do
 
 		task.wait(0.3)
 
-		Status.Text = "initializing evo..."
-		Login.Text = "LOADING EVO"
+		Status.Text = "initializing pulsar..."
+		Login.Text = "LOADING PULSAR"
 
 		task.wait(0.35)
 
@@ -385,6 +387,9 @@ do
 	end
 end
 
+local PULSAR_ICON_IMAGE =
+	"rbxassetid://80704732685594"
+
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -394,7 +399,7 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
-local FolderName = "EVO_V7_4"
+local FolderName = "PULSAR_V7_4"
 local ConfigFolder = FolderName .. "/configs"
 
 if not isfolder(FolderName) then
@@ -696,7 +701,7 @@ local Colors = {
 
 local GUI = Instance.new("ScreenGui")
 
-GUI.Name = "EVO_V7_4"
+GUI.Name = "PULSAR_V7_4"
 
 GUI.ResetOnSpawn = false
 
@@ -717,7 +722,7 @@ local UIClickSound =
 	Instance.new("Sound")
 
 UIClickSound.Name =
-	"EVO_UIClick"
+	"PULSAR_UIClick"
 
 UIClickSound.SoundId =
 	"rbxassetid://6895079853"
@@ -735,7 +740,7 @@ local UIHoverSound =
 	Instance.new("Sound")
 
 UIHoverSound.Name =
-	"EVO_UIHover"
+	"PULSAR_UIHover"
 
 UIHoverSound.SoundId =
 	"rbxassetid://6895079853"
@@ -773,13 +778,13 @@ local function HookUIButton(Object)
 	end
 
 	if Object:GetAttribute(
-		"EVO_SOUND_HOOKED"
+		"PULSAR_SOUND_HOOKED"
 	) then
 		return
 	end
 
 	Object:SetAttribute(
-		"EVO_SOUND_HOOKED",
+		"PULSAR_SOUND_HOOKED",
 		true
 	)
 
@@ -895,13 +900,13 @@ local Logo =
 
 Logo.Size =
 	UDim2.fromOffset(
-		85,
+		92,
 		22
 	)
 
 Logo.Position =
 	UDim2.fromOffset(
-		11,
+		38,
 		5
 	)
 
@@ -909,7 +914,7 @@ Logo.BackgroundTransparency =
 	1
 
 Logo.Text =
-	"EVO"
+	"PULSAR"
 
 Logo.TextColor3 =
 	Accent()
@@ -940,7 +945,7 @@ Build.Size =
 
 Build.Position =
 	UDim2.fromOffset(
-		11,
+		38,
 		27
 	)
 
@@ -948,7 +953,7 @@ Build.BackgroundTransparency =
 	1
 
 Build.Text =
-	"<3 evo  |  v7.4"
+	"<3 pulsar  |  v7.4"
 
 Build.TextColor3 =
 	Colors.Sub
@@ -970,7 +975,7 @@ Build.Parent =
 
 Build.Position =
 	UDim2.fromOffset(
-		11,
+		38,
 		25
 	)
 
@@ -991,7 +996,7 @@ OwnerPrefix.Size =
 
 OwnerPrefix.Position =
 	UDim2.fromOffset(
-		11,
+		38,
 		39
 	)
 
@@ -1034,7 +1039,7 @@ OwnerEVO.Size =
 
 OwnerEVO.Position =
 	UDim2.fromOffset(
-		45,
+		72,
 		39
 	)
 
@@ -1073,7 +1078,7 @@ OwnerHandle.Size =
 
 OwnerHandle.Position =
 	UDim2.fromOffset(
-		64,
+		91,
 		39
 	)
 
@@ -1111,14 +1116,14 @@ local TabHolder =
 TabHolder.Size =
 	UDim2.new(
 		1,
-		-105,
+		-142,
 		0,
 		34
 	)
 
 TabHolder.Position =
 	UDim2.fromOffset(
-		100,
+		137,
 		10
 	)
 
@@ -1240,7 +1245,7 @@ local function CreateTab(Name)
 
 	Button.Size =
 		UDim2.fromOffset(
-			94,
+			87,
 			28
 		)
 
@@ -4548,7 +4553,7 @@ CloseEVO.BorderSizePixel =
 	0
 
 CloseEVO.Text =
-	"CLOSE EVO COMPLETELY"
+	"CLOSE PULSAR COMPLETELY"
 
 CloseEVO.TextColor3 =
 	Color3.fromRGB(
@@ -6272,7 +6277,7 @@ local TracerLayer =
 	Instance.new("Frame")
 
 TracerLayer.Name =
-	"EVO_TracerLayer"
+	"PULSAR_TracerLayer"
 
 TracerLayer.Size =
 	UDim2.fromScale(
@@ -7686,7 +7691,7 @@ local SnowLayer =
 	Instance.new("Frame")
 
 SnowLayer.Name =
-	"EvoSnow"
+	"PulsarSnow"
 
 SnowLayer.Size =
 	UDim2.fromScale(
@@ -8339,7 +8344,7 @@ local function CloseEVOScript()
 		nil
 
 	RunService:UnbindFromRenderStep(
-		"EVO_V7_4_RENDER"
+		"PULSAR_V7_4_RENDER"
 	)
 
 	StopFly()
@@ -8393,20 +8398,20 @@ local function CloseEVOScript()
 	end
 
 	print(
-		"EVO V7.4 closed. Run the loader again to reopen."
+		"PULSAR V7.4 closed. Run the loader again to reopen."
 	)
 
 end
 
 	CloseEVO.MouseButton1Click:Connect(function()
-		CloseEVO.Text = "CLOSING EVO..."
+		CloseEVO.Text = "CLOSING PULSAR..."
 		task.wait(0.08)
 		CloseEVOScript()
 	end)
 
 RunService:BindToRenderStep(
 
-	"EVO_V7_4_RENDER",
+	"PULSAR_V7_4_RENDER",
 
 	Enum.RenderPriority.Camera.Value
 	+
@@ -8554,4 +8559,83 @@ RunService:BindToRenderStep(
 
 UpdateSnow()
 
-print("EVO V7.4 loaded.")
+pcall(function()
+
+	local PulsarIcon =
+		Instance.new("ImageLabel")
+
+	PulsarIcon.Name =
+		"PulsarIcon"
+
+	PulsarIcon.Size =
+		UDim2.fromOffset(
+			24,
+			24
+		)
+
+	PulsarIcon.Position =
+		UDim2.fromOffset(
+			9,
+			4
+		)
+
+	PulsarIcon.BackgroundTransparency =
+		1
+
+	PulsarIcon.BorderSizePixel =
+		0
+
+	PulsarIcon.ScaleType =
+		Enum.ScaleType.Fit
+
+	PulsarIcon.ZIndex =
+		23
+
+	local AssetId =
+		"80704732685594"
+
+	PulsarIcon.Image =
+		"rbxassetid://"
+		..
+		AssetId
+
+	PulsarIcon.Parent =
+		Topbar
+
+	-- If Roblox doesn't resolve the direct image/decal content ID,
+	-- automatically fall back to the asset thumbnail endpoint.
+	task.spawn(function()
+
+		local Started =
+			tick()
+
+		while PulsarIcon.Parent
+			and
+			not PulsarIcon.IsLoaded
+			and
+			tick() - Started < 2 do
+
+			task.wait(
+				0.1
+			)
+
+		end
+
+		if PulsarIcon.Parent
+			and
+			not PulsarIcon.IsLoaded then
+
+			PulsarIcon.Image =
+				"rbxthumb://type=Asset&id="
+				..
+				AssetId
+				..
+				"&w=420&h=420"
+
+		end
+
+	end)
+
+end)
+
+print("PULSAR V7.4 loaded.")
