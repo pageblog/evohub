@@ -663,6 +663,213 @@ local WaitingAimBind = false
 local WaitingMenuBind = false
 
 local CurrentTarget = nil
+local CurrentTargetHumanoid = nil
+local CurrentTargetRoot = nil
+local CurrentTargetAimYOffset = nil
+local CurrentTargetLastRootY = nil
+local CurrentTargetStableAimY = nil
+local CurrentTargetLastAimTime = nil
+local CurrentTargetLastSafeCamera = nil
+local CurrentTargetDiedConnection = nil
+local CurrentTargetStateConnection = nil
+local CurrentTargetHealthConnection = nil
+
+local function DisconnectTargetWatchers()
+
+	if CurrentTargetDiedConnection then
+		CurrentTargetDiedConnection:Disconnect()
+		CurrentTargetDiedConnection = nil
+	end
+
+	if CurrentTargetStateConnection then
+		CurrentTargetStateConnection:Disconnect()
+		CurrentTargetStateConnection = nil
+	end
+
+	if CurrentTargetHealthConnection then
+		CurrentTargetHealthConnection:Disconnect()
+		CurrentTargetHealthConnection = nil
+	end
+
+	CurrentTargetHumanoid = nil
+	CurrentTargetRoot = nil
+	CurrentTargetAimYOffset = nil
+	CurrentTargetLastRootY = nil
+	CurrentTargetStableAimY = nil
+	CurrentTargetLastAimTime = nil
+	CurrentTargetLastSafeCamera = nil
+
+end
+
+local function IsHumanoidDeathLike(Humanoid)
+
+	if not Humanoid then
+		return true
+	end
+
+	if Humanoid.Health <= 0 then
+		return true
+	end
+
+	local State =
+		Humanoid:GetState()
+
+	if State == Enum.HumanoidStateType.Dead
+		or
+		State == Enum.HumanoidStateType.Ragdoll
+		or
+		State == Enum.HumanoidStateType.FallingDown then
+
+		return true
+
+	end
+
+	local CriticalHealth =
+		math.max(
+			1,
+			Humanoid.MaxHealth * 0.03
+		)
+
+	if Humanoid.Health <= CriticalHealth then
+		return true
+	end
+
+	return false
+
+end
+
+local function ReleaseAimTarget(RestoreCamera)
+
+	local SavedCamera =
+		CurrentTargetLastSafeCamera
+
+	DisconnectTargetWatchers()
+
+	CurrentTarget = nil
+
+	if RestoreCamera
+		and
+		SavedCamera then
+
+		Camera.CFrame =
+			SavedCamera
+
+	end
+
+	if Config.AimToggle then
+		AimHeld = false
+	end
+
+end
+
+local function SetAimTarget(Part)
+
+	DisconnectTargetWatchers()
+
+	CurrentTarget = Part
+
+	if not Part
+		or
+		not Part.Parent then
+
+		CurrentTarget = nil
+		return
+
+	end
+
+	local Character = Part.Parent
+
+	local Humanoid =
+		Character:FindFirstChildOfClass(
+			"Humanoid"
+		)
+
+	if not Humanoid then
+
+		CurrentTarget = nil
+		return
+
+	end
+
+	CurrentTargetHumanoid = Humanoid
+
+	CurrentTargetRoot =
+		Character:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	if CurrentTargetRoot then
+
+		CurrentTargetAimYOffset =
+			Part.Position.Y
+			-
+			CurrentTargetRoot.Position.Y
+
+		CurrentTargetLastRootY =
+			CurrentTargetRoot.Position.Y
+
+		CurrentTargetStableAimY =
+			CurrentTargetRoot.Position.Y
+			+
+			CurrentTargetAimYOffset
+
+		CurrentTargetLastAimTime =
+			os.clock()
+
+		CurrentTargetLastSafeCamera =
+			Camera.CFrame
+
+	end
+
+	if IsHumanoidDeathLike(
+		Humanoid
+	) then
+
+		ReleaseAimTarget(true)
+		return
+
+	end
+
+	CurrentTargetDiedConnection =
+		Humanoid.Died:Connect(function()
+
+			if CurrentTargetHumanoid == Humanoid then
+				ReleaseAimTarget(true)
+			end
+
+		end)
+
+	CurrentTargetHealthConnection =
+		Humanoid.HealthChanged:Connect(function()
+
+			if CurrentTargetHumanoid == Humanoid
+				and
+				IsHumanoidDeathLike(
+					Humanoid
+				) then
+
+				ReleaseAimTarget(true)
+
+			end
+
+		end)
+
+	CurrentTargetStateConnection =
+		Humanoid.StateChanged:Connect(function()
+
+			if CurrentTargetHumanoid == Humanoid
+				and
+				IsHumanoidDeathLike(
+					Humanoid
+				) then
+
+				ReleaseAimTarget(true)
+
+			end
+
+		end)
+
+end
 
 local SelectedPlayer = nil
 local ViewingPlayer = nil
@@ -7339,7 +7546,9 @@ local function GetTarget()
 
 		if not Humanoid
 			or
-			Humanoid.Health <= 0
+			IsHumanoidDeathLike(
+				Humanoid
+			)
 			or
 			not Part then
 
@@ -7428,7 +7637,9 @@ local function IsAimTargetValid(Part)
 
 	if not Humanoid
 		or
-		Humanoid.Health <= 0 then
+		IsHumanoidDeathLike(
+			Humanoid
+		) then
 
 		return false
 
@@ -7470,13 +7681,7 @@ local function IsAimTargetValid(Part)
 	end
 
 	if AimPart ~= Part then
-
-		CurrentTarget =
-			AimPart
-
-		Part =
-			AimPart
-
+		return false
 	end
 
 	local Distance =
@@ -8251,16 +8456,16 @@ UIS.InputBegan:Connect(function(
 				AimHeld =
 					false
 
-				CurrentTarget =
-					nil
+				ReleaseAimTarget(true)
 
 			else
 
 				AimHeld =
 					true
 
-				CurrentTarget =
+				SetAimTarget(
 					GetTarget()
+				)
 
 				if not CurrentTarget then
 
@@ -8276,8 +8481,9 @@ UIS.InputBegan:Connect(function(
 			AimHeld =
 				true
 
-			CurrentTarget =
+			SetAimTarget(
 				GetTarget()
+			)
 
 			if not CurrentTarget then
 
@@ -8303,8 +8509,7 @@ UIS.InputEnded:Connect(function(Input)
 		AimHeld =
 			false
 
-		CurrentTarget =
-			nil
+		ReleaseAimTarget(true)
 
 	end
 
@@ -8340,8 +8545,7 @@ local function CloseEVOScript()
 	AimHeld =
 		false
 
-	CurrentTarget =
-		nil
+	ReleaseAimTarget(true)
 
 	RunService:UnbindFromRenderStep(
 		"PULSAR_V7_4_RENDER"
@@ -8494,29 +8698,23 @@ RunService:BindToRenderStep(
 
 			if not CurrentTarget then
 
-				CurrentTarget =
+				SetAimTarget(
 					GetTarget()
+				)
 
 			elseif not IsAimTargetValid(
 				CurrentTarget
 			) then
 
-				CurrentTarget =
-					nil
-
-				if Config.AimToggle then
-
-					AimHeld =
-						false
-
-				end
+				ReleaseAimTarget(true)
 
 			end
 
 		else
 
-			CurrentTarget =
-				nil
+			if CurrentTarget then
+				ReleaseAimTarget(false)
+			end
 
 		end
 
@@ -8526,14 +8724,155 @@ RunService:BindToRenderStep(
 				CurrentTarget
 			) then
 
+			local TargetCharacter =
+				CurrentTarget.Parent
+
+			local TargetHumanoid =
+				TargetCharacter
+				and
+				TargetCharacter:FindFirstChildOfClass(
+					"Humanoid"
+				)
+
+			local TargetRoot =
+				TargetCharacter
+				and
+				TargetCharacter:FindFirstChild(
+					"HumanoidRootPart"
+				)
+
+			if not TargetHumanoid
+				or
+				not TargetRoot
+				or
+				IsHumanoidDeathLike(
+					TargetHumanoid
+				) then
+
+				ReleaseAimTarget(true)
+				return
+
+			end
+
+			if CurrentTargetLastRootY then
+
+				local RootDrop =
+					CurrentTargetLastRootY
+					-
+					TargetRoot.Position.Y
+
+				local LowHealth =
+					TargetHumanoid.Health
+					<=
+					math.max(
+						5,
+						TargetHumanoid.MaxHealth * 0.15
+					)
+
+				if LowHealth
+					and
+					RootDrop > 1.25 then
+
+					ReleaseAimTarget(true)
+					return
+
+				end
+
+			end
+
+			CurrentTargetLastRootY =
+				TargetRoot.Position.Y
+
+			local StableYOffset =
+				CurrentTargetAimYOffset
+				or
+				(
+					CurrentTarget.Position.Y
+					-
+					TargetRoot.Position.Y
+				)
+
+			local RawAimY =
+				TargetRoot.Position.Y
+				+
+				StableYOffset
+
+			local Now =
+				os.clock()
+
+			local DeltaTime =
+				math.clamp(
+					Now
+					-
+					(
+						CurrentTargetLastAimTime
+						or
+						Now
+					),
+					1 / 240,
+					0.1
+				)
+
+			CurrentTargetLastAimTime =
+				Now
+
+			if not CurrentTargetStableAimY then
+				CurrentTargetStableAimY =
+					RawAimY
+			end
+
+			local SuddenDrop =
+				CurrentTargetStableAimY
+				-
+				RawAimY
+
+			if SuddenDrop > 2.25 then
+
+				ReleaseAimTarget(true)
+				return
+
+			end
+
+			local MaxDownPerSecond =
+				7
+
+			local MinimumAllowedY =
+				CurrentTargetStableAimY
+				-
+				MaxDownPerSecond
+				*
+				DeltaTime
+
+			local StabilizedY =
+				math.max(
+					RawAimY,
+					MinimumAllowedY
+				)
+
+			CurrentTargetStableAimY =
+				StabilizedY
+
 			local TargetPosition =
-				CurrentTarget.Position
+				Vector3.new(
+					TargetRoot.Position.X,
+					StabilizedY,
+					TargetRoot.Position.Z
+				)
 
 			if Config.Prediction then
 
+				local RootVelocity =
+					TargetRoot.AssemblyLinearVelocity
+
 				TargetPosition +=
-					CurrentTarget
-					.AssemblyLinearVelocity
+					Vector3.new(
+						RootVelocity.X,
+						math.max(
+							RootVelocity.Y,
+							-7
+						),
+						RootVelocity.Z
+					)
 					*
 					Config.PredictionAmount
 
@@ -8544,6 +8883,26 @@ RunService:BindToRenderStep(
 					Camera.CFrame.Position,
 					TargetPosition
 				)
+
+			local CurrentLookY =
+				Camera.CFrame.LookVector.Y
+
+			local DesiredLookY =
+				Desired.LookVector.Y
+
+			if CurrentTargetLastSafeCamera
+				and
+				DesiredLookY
+				<
+				CurrentLookY - 0.22 then
+
+				ReleaseAimTarget(true)
+				return
+
+			end
+
+			CurrentTargetLastSafeCamera =
+				Camera.CFrame
 
 			Camera.CFrame =
 				Camera.CFrame:Lerp(
